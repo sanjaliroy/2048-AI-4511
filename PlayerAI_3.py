@@ -161,82 +161,82 @@ class PlayerAI(BaseAI):
 	# 	sv= f1+f2+f4+f5+f6  # static value
 	# 	return sv
 # --------------------------------
-	def evaluate(self, grid):
-		# monotonicity = np.sum(self.mon_grad*np.array(grid.map))
-		# value = len(grid.getAvailableCells())**2 + grid.getMaxTile()**0.5 + monotonicity**0.5
-		# return value
+	# def evaluate(self, grid):
+	# 	# monotonicity = np.sum(self.mon_grad*np.array(grid.map))
+	# 	# value = len(grid.getAvailableCells())**2 + grid.getMaxTile()**0.5 + monotonicity**0.5
+	# 	# return value
 
-		smoothWeight = 0.1
-		monoWeight  = 1.0
-		emptyWeight  = 2.7
-		maxWeight    = 1.0
-		empty = 1 if len(grid.getAvailableCells()) == 0 else len(grid.getAvailableCells())
-		return self.smoothness(grid) * smoothWeight + \
-			self.monotonicity(grid)*monoWeight + \
-			np.log(empty)*emptyWeight +\
-			grid.getMaxTile()*maxWeight
+	# 	smoothWeight = 0.1
+	# 	monoWeight  = 1.0
+	# 	emptyWeight  = 2.7
+	# 	maxWeight    = 1.0
+	# 	empty = 1 if len(grid.getAvailableCells()) == 0 else len(grid.getAvailableCells())
+	# 	return self.smoothness(grid) * smoothWeight + \
+	# 		self.monotonicity(grid)*monoWeight + \
+	# 		np.log(empty)*emptyWeight +\
+	# 		grid.getMaxTile()*maxWeight
 
-	def smoothness(self, grid):
-		smoothness = 0
-		for i in range(4):
-			for j in range(4):
-				if not grid.canInsert((i,j)):
-					value = np.log(grid.map[i][j])/np.log(2)
-					for vector in [RIGHT_VEC, DOWN_VEC]:
-						targetCell = self.findfarthest(grid, (i,j), vector)['far']
-						if not grid.canInsert(targetCell):
-							target = grid.getCellValue(targetCell)
-							targetValue = np.log(target)/np.log(2)
-							smoothness -= abs(value - targetValue)
-		return smoothness
-
-
-	def monotonicity(self, grid):
-		totals = [0, 0, 0, 0]
-		# up/down
-		for i in range(4):
-			current = 0
-			nxt = current + 1
-			while nxt < 4:
-				while nxt < 4 and grid.canInsert((i, nxt)):
-					nxt+=1
-				if nxt >= 4:
-					nxt -= 1
-				currentValue = np.log(grid.getCellValue((i, current)))/np.log(2) if not grid.canInsert((i, current)) else 0
-				nextValue = np.log(grid.getCellValue((i, nxt)))/np.log(2) if not grid.canInsert((i, nxt)) else 0
-				if currentValue > nextValue:
-					totals[0] += nextValue - currentValue
-				elif nextValue > currentValue:
-					totals[1] += currentValue - nextValue
-				current = nxt
-				nxt += 1
-
-		# left/right
-		for j in range(4):
-			current = 0
-			nxt = current + 1
-			while nxt < 4:
-				while nxt < 4 and grid.canInsert((nxt, j)):
-					nxt+=1
-				if nxt >= 4:
-					nxt -= 1
-				currentValue = np.log(grid.getCellValue((current, j)))/np.log(2) if not grid.canInsert((current, j)) else 0
-				nextValue = np.log(grid.getCellValue((nxt, j)))/np.log(2) if not grid.canInsert((nxt, j)) else 0
-				if currentValue > nextValue:
-					totals[2] += nextValue - currentValue
-				elif nextValue > currentValue:
-					totals[3] += currentValue - nextValue
-				current = nxt
-				nxt += 1
-		return max(totals[0], totals[1]) + max(totals[2], totals[3])
+	# def smoothness(self, grid):
+	# 	smoothness = 0
+	# 	for i in range(4):
+	# 		for j in range(4):
+	# 			if not grid.canInsert((i,j)):
+	# 				value = np.log(grid.map[i][j])/np.log(2)
+	# 				for vector in [RIGHT_VEC, DOWN_VEC]:
+	# 					targetCell = self.findfarthest(grid, (i,j), vector)['far']
+	# 					if not grid.canInsert(targetCell):
+	# 						target = grid.getCellValue(targetCell)
+	# 						targetValue = np.log(target)/np.log(2)
+	# 						smoothness -= abs(value - targetValue)
+	# 	return smoothness
 
 
-	def findfarthest(self, grid, cell, vector):
-		while True:
-			prev = cell
-			cell = (prev[0] + vector[0], prev[1] + vector[1])
-			if grid.crossBound(cell) or not grid.canInsert(cell):
-				return {'far': prev, 'nxt': cell}
+	# def monotonicity(self, grid):
+	# 	totals = [0, 0, 0, 0]
+	# 	# up/down
+	# 	for i in range(4):
+	# 		current = 0
+	# 		nxt = current + 1
+	# 		while nxt < 4:
+	# 			while nxt < 4 and grid.canInsert((i, nxt)):
+	# 				nxt+=1
+	# 			if nxt >= 4:
+	# 				nxt -= 1
+	# 			currentValue = np.log(grid.getCellValue((i, current)))/np.log(2) if not grid.canInsert((i, current)) else 0
+	# 			nextValue = np.log(grid.getCellValue((i, nxt)))/np.log(2) if not grid.canInsert((i, nxt)) else 0
+	# 			if currentValue > nextValue:
+	# 				totals[0] += nextValue - currentValue
+	# 			elif nextValue > currentValue:
+	# 				totals[1] += currentValue - nextValue
+	# 			current = nxt
+	# 			nxt += 1
+
+	# 	# left/right
+	# 	for j in range(4):
+	# 		current = 0
+	# 		nxt = current + 1
+	# 		while nxt < 4:
+	# 			while nxt < 4 and grid.canInsert((nxt, j)):
+	# 				nxt+=1
+	# 			if nxt >= 4:
+	# 				nxt -= 1
+	# 			currentValue = np.log(grid.getCellValue((current, j)))/np.log(2) if not grid.canInsert((current, j)) else 0
+	# 			nextValue = np.log(grid.getCellValue((nxt, j)))/np.log(2) if not grid.canInsert((nxt, j)) else 0
+	# 			if currentValue > nextValue:
+	# 				totals[2] += nextValue - currentValue
+	# 			elif nextValue > currentValue:
+	# 				totals[3] += currentValue - nextValue
+	# 			current = nxt
+	# 			nxt += 1
+	# 	return max(totals[0], totals[1]) + max(totals[2], totals[3])
+
+
+	# def findfarthest(self, grid, cell, vector):
+	# 	while True:
+	# 		prev = cell
+	# 		cell = (prev[0] + vector[0], prev[1] + vector[1])
+	# 		if grid.crossBound(cell) or not grid.canInsert(cell):
+	# 			return {'far': prev, 'nxt': cell}
 
 # -------------------------------------------
 
