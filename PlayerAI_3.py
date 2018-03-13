@@ -240,6 +240,7 @@ class PlayerAI(BaseAI):
 
 # -------------------------------------------
 
+
 	def evaluate(self, board,commonRatio=0.25):
 		linearWeightedVal = 0
 		invert = False
