@@ -2,21 +2,33 @@ from random import randint
 from BaseAI_3 import BaseAI
 from Displayer_3 import Displayer
 import numpy as np
+import time
 
 directionVectors = (UP_VEC, DOWN_VEC, LEFT_VEC, RIGHT_VEC) = ((-1, 0), (1, 0), (0, -1), (0, 1))
 
 class PlayerAI(BaseAI):
 	depth = 0
+	time = 0
 	mon_grad = np.array([[ 7,  6,  5,  4],
 						 [ 6,  5,  4, 3],
 						 [ 5,  4, 3, 2],
 						 [ 4, 3, 2, 1]])
 
 	def getMove(self, grid):
+		self.time = time.time()
 		(maxChild, maxUtility) = self.maximize(grid, -float('inf'), float('inf'))
 		move = maxChild[1]
+		# self.evaluate(maxChild[0],True)
 		self.depth = 0
 		return move
+
+	def timeup(self, depth):
+		diff = time.time() - self.time
+		if diff >= 0.19/depth:
+			print(diff)
+			return True
+		else:
+			return False
 	
 	def maxchildren(self, grid):
 		children = []
@@ -33,8 +45,8 @@ class PlayerAI(BaseAI):
 			child = grid.clone()
 			child.insertTile(cell, 2)
 			children.append(child)
-			child.insertTile(cell, 4)
-			children.append(child)
+			# child.insertTile(cell, 4)
+			# children.append(child)
 		return children
 
 	def minimize(self, grid, alpha, beta):
@@ -53,7 +65,7 @@ class PlayerAI(BaseAI):
 		return (minChild, minUtility)
 
 	def maximize(self, grid, alpha, beta):
-		if self.depth>=6 or not grid.getAvailableMoves():
+		if self.timeup(self.depth+1) or not grid.getAvailableMoves():
 			return (None, self.evaluate(grid))
 		(maxChild, maxUtility) = (None, -float('inf'))
 		self.depth += 1
@@ -73,6 +85,291 @@ class PlayerAI(BaseAI):
 		else: 
 			return 4
 
+	def cellOccupied(self, grid, pos):
+		return not not grid.getCellValue(pos)
+
+
+# --------------------------------
+	# def evaluate(self, grid):
+	# 	value = self.empty(grid) + self.monotonicity(grid)
+	# 	return value
+
+	def monoton(self, grid):
+	 	return np.log(np.sum(self.mon_grad*np.array(grid.map)))
+
+	# def empty(self, grid):
+	# 	return len(grid.getAvailableCells())**2
+
+	def evaluate(self, grid, prt = False):
+		smoothWeight = 0.8
+		monoWeight  = 6.0
+		emptyWeight  = 2.7
+		maxWeight    = 1.0
+		empty = 1 if len(grid.getAvailableCells()) == 0 else len(grid.getAvailableCells())
+		smooth = self.smoothness(grid) * smoothWeight
+		monoton = self.monoton(grid) * monoWeight
+		emptiness = np.log(empty) * emptyWeight
+		maxval = self.maxtile(grid) * maxWeight
+		total = smooth + monoton + emptiness + maxval
+		if prt:
+			print('smooth: ', smooth)
+			print('monoton:', monoton)
+			print('emptiness: ', emptiness)
+			print('maxvalue: ', maxval)
+			print('total: ', total)
+		return total
+
+	def smoothness(self, grid):
+		smoothness = 0
+		for i in range(4):
+			for j in range(4):
+				if not grid.canInsert((i,j)):
+					value = np.log(grid.map[i][j])/np.log(2)
+					for vector in [RIGHT_VEC, DOWN_VEC]:
+						targetCell = self.findfarthest(grid, (i,j), vector)['nxt']
+						if self.cellOccupied(grid, targetCell):
+							target = grid.getCellValue(targetCell)
+							targetValue = np.log(target)/np.log(2)
+							smoothness -= abs(value - targetValue)
+		return smoothness
+
+	def maxtile(self, grid):
+		return np.log(grid.getMaxTile())/np.log(2)
+
+
+	def monotonicity(self, grid):
+		totals = [0, 0, 0, 0]
+		# up/down
+		for i in range(4):
+			current = 0
+			nxt = current + 1
+			while nxt < 4:
+				while nxt < 4 and grid.canInsert((i, nxt)):
+					nxt+=1
+				if nxt >= 4:
+					nxt -= 1
+				currentValue = np.log(grid.getCellValue((i, current)))/np.log(2) if not grid.canInsert((i, current)) else 0
+				nextValue = np.log(grid.getCellValue((i, nxt)))/np.log(2) if not grid.canInsert((i, nxt)) else 0
+				if currentValue > nextValue:
+					totals[0] += nextValue - currentValue
+				elif nextValue > currentValue:
+					totals[1] += currentValue - nextValue
+				current = nxt
+				nxt += 1
+
+		# left/right
+		for j in range(4):
+			current = 0
+			nxt = current + 1
+			while nxt < 4:
+				while nxt < 4 and grid.canInsert((nxt, j)):
+					nxt+=1
+				if nxt >= 4:
+					nxt -= 1
+				currentValue = np.log(grid.getCellValue((current, j)))/np.log(2) if not grid.canInsert((current, j)) else 0
+				nextValue = np.log(grid.getCellValue((nxt, j)))/np.log(2) if not grid.canInsert((nxt, j)) else 0
+				if currentValue > nextValue:
+					totals[2] += nextValue - currentValue
+				elif nextValue > currentValue:
+					totals[3] += currentValue - nextValue
+				current = nxt
+				nxt += 1
+		return max(totals[0], totals[1]) + max(totals[2], totals[3])
+
+
+	def findfarthest(self, grid, cell, vector):
+		while True:
+			prev = cell
+			cell = (prev[0] + vector[0], prev[1] + vector[1])
+			if not grid.crossBound(cell) and grid.canInsert(cell):
+				continue
+			else:
+				return {'far': prev, 'nxt': cell}
+
+# -------------------------------------------
+
+
+	# def evaluate(self, board, commonRatio=0.25):
+	# 	linearWeightedVal = 0
+	# 	invert = False
+	# 	weight = 1.
+	# 	malus = 0
+	# 	criticalTile = (-1,-1)
+	# 	for y in range(0,4):
+	# 		for x in range(0,4):
+	# 			b_x = x
+	# 			b_y = y
+	# 			if invert:
+	# 				b_x = 4 - 1 - x
+	# 			#linearW
+	# 			currVal=board.getCellValue((b_x,b_y))
+	# 			if(currVal == 0 and criticalTile == (-1,-1)):
+	# 				criticalTile = (b_x,b_y)
+	# 			linearWeightedVal += currVal*weight
+	# 			weight *= commonRatio
+	# 		invert = not invert
+			
+	# 	linearWeightedVal2 = 0
+	# 	invert = False
+	# 	weight = 1.
+	# 	malus = 0
+	# 	criticalTile2 = (-1,-1)
+	# 	for x in range(0,4):
+	# 		for y in range(0,4):
+	# 			b_x = x
+	# 			b_y = y
+	# 			if invert:
+	# 				b_y = 4 - 1 - y
+	# 			#linearW
+	# 			currVal=board.getCellValue((b_x,b_y))
+	# 			if(currVal == 0 and criticalTile2 == (-1,-1)):
+	# 				criticalTile2 = (b_x,b_y)
+	# 			linearWeightedVal2 += currVal*weight
+	# 			weight *= commonRatio
+	# 		invert = not invert
+			
+		
+	# 	linearWeightedVal3 = 0
+	# 	invert = False
+	# 	weight = 1.
+	# 	malus = 0
+	# 	criticalTile3 = (-1,-1)
+	# 	for y in range(0,4):
+	# 		for x in range(0,4):
+	# 			b_x = x
+	# 			b_y = 4 - 1 - y
+	# 			if invert:
+	# 				b_x = 4 - 1 - x
+	# 			#linearW
+	# 			currVal=board.getCellValue((b_x,b_y))
+	# 			if(currVal == 0 and criticalTile3 == (-1,-1)):
+	# 				criticalTile3 = (b_x,b_y)
+	# 			linearWeightedVal3 += currVal*weight
+	# 			weight *= commonRatio
+	# 		invert = not invert
+			
+	# 	linearWeightedVal4 = 0
+	# 	invert = False
+	# 	weight = 1.
+	# 	malus = 0
+	# 	criticalTile4 = (-1,-1)
+	# 	for x in range(0,4):
+	# 		for y in range(0,4):
+	# 			b_x = 4 - 1 - x
+	# 			b_y = y
+	# 			if invert:
+	# 				b_y = 4 - 1 - y
+	# 			#linearW
+	# 			currVal=board.getCellValue((b_x,b_y))
+	# 			if(currVal == 0 and criticalTile4 == (-1,-1)):
+	# 				criticalTile4 = (b_x,b_y)
+	# 			linearWeightedVal4 += currVal*weight
+	# 			weight *= commonRatio
+	# 		invert = not invert
+			
+			
+	# 	linearWeightedVal5 = 0
+	# 	invert = True
+	# 	weight = 1.
+	# 	malus = 0
+	# 	criticalTile5 = (-1,-1)
+	# 	for y in range(0,4):
+	# 		for x in range(0,4):
+	# 			b_x = x
+	# 			b_y = y
+	# 			if invert:
+	# 				b_x = 4 - 1 - x
+	# 			#linearW
+	# 			currVal=board.getCellValue((b_x,b_y))
+	# 			if(currVal == 0 and criticalTile5 == (-1,-1)):
+	# 				criticalTile5 = (b_x,b_y)
+	# 			linearWeightedVal5 += currVal*weight
+	# 			weight *= commonRatio
+	# 		invert = not invert
+			
+	# 	linearWeightedVal6 = 0
+	# 	invert = True
+	# 	weight = 1.
+	# 	malus = 0
+	# 	criticalTile6 = (-1,-1)
+	# 	for x in range(0,4):
+	# 		for y in range(0,4):
+	# 			b_x = x
+	# 			b_y = y
+	# 			if invert:
+	# 				b_y = 4 - 1 - y
+	# 			#linearW
+	# 			currVal=board.getCellValue((b_x,b_y))
+	# 			if(currVal == 0 and criticalTile6 == (-1,-1)):
+	# 				criticalTile6 = (b_x,b_y)
+	# 			linearWeightedVal6 += currVal*weight
+	# 			weight *= commonRatio
+	# 		invert = not invert
+			
+		
+	# 	linearWeightedVal7 = 0
+	# 	invert = True
+	# 	weight = 1.
+	# 	malus = 0
+	# 	criticalTile7 = (-1,-1)
+	# 	for y in range(0,4):
+	# 		for x in range(0,4):
+	# 			b_x = x
+	# 			b_y = 4 - 1 - y
+	# 			if invert:
+	# 				b_x = 4 - 1 - x
+	# 			#linearW
+	# 			currVal=board.getCellValue((b_x,b_y))
+	# 			if(currVal == 0 and criticalTile7 == (-1,-1)):
+	# 				criticalTile7 = (b_x,b_y)
+	# 			linearWeightedVal7 += currVal*weight
+	# 			weight *= commonRatio
+	# 		invert = not invert
+			
+	# 	linearWeightedVal8 = 0
+	# 	invert = True
+	# 	weight = 1.
+	# 	malus = 0
+	# 	criticalTile8 = (-1,-1)
+	# 	for x in range(0,4):
+	# 		for y in range(0,4):
+	# 			b_x = 4 - 1 - x
+	# 			b_y = y
+	# 			if invert:
+	# 				b_y = 4 - 1 - y
+	# 			#linearW
+	# 			currVal=board.getCellValue((b_x,b_y))
+	# 			if(currVal == 0 and criticalTile8 == (-1,-1)):
+	# 				criticalTile8 = (b_x,b_y)
+	# 			linearWeightedVal8 += currVal*weight
+	# 			weight *= commonRatio
+	# 		invert = not invert
+			
+	# 	maxVal = max(linearWeightedVal,linearWeightedVal2,linearWeightedVal3,linearWeightedVal4,linearWeightedVal5,linearWeightedVal6,linearWeightedVal7,linearWeightedVal8)
+	# 	if(linearWeightedVal2 > linearWeightedVal):
+	# 		linearWeightedVal = linearWeightedVal2
+	# 		criticalTile = criticalTile2
+	# 	if(linearWeightedVal3 > linearWeightedVal):
+	# 		linearWeightedVal = linearWeightedVal3
+	# 		criticalTile = criticalTile3
+	# 	if(linearWeightedVal4 > linearWeightedVal):
+	# 		linearWeightedVal = linearWeightedVal4
+	# 		criticalTile = criticalTile4
+	# 	if(linearWeightedVal5 > linearWeightedVal):
+	# 		linearWeightedVal = linearWeightedVal5
+	# 		criticalTile = criticalTile5
+	# 	if(linearWeightedVal6 > linearWeightedVal):
+	# 		linearWeightedVal = linearWeightedVal6
+	# 		criticalTile = criticalTile6
+	# 	if(linearWeightedVal7 > linearWeightedVal):
+	# 		linearWeightedVal = linearWeightedVal7
+	# 		criticalTile = criticalTile7
+	# 	if(linearWeightedVal8 > linearWeightedVal):
+	# 		linearWeightedVal = linearWeightedVal8
+	# 		criticalTile = criticalTile8
+		
+	# 	return maxVal
+	# ------------------------------------
 
 
 	# def compactness(self,grid):
@@ -150,7 +447,7 @@ class PlayerAI(BaseAI):
 	# 	return inc+vertical
 
 
-	# def eval(self,grid):
+	# def evaluate(self,grid):
 	# 	f1= grid.getMaxTile()*2;
 	# 	f2= len(grid.getAvailableCells())*400
 
@@ -160,264 +457,3 @@ class PlayerAI(BaseAI):
 	# 	#print "heuristic",f1,f2,f4,f5,f6;
 	# 	sv= f1+f2+f4+f5+f6  # static value
 	# 	return sv
-# --------------------------------
-	# def evaluate(self, grid):
-	# 	# monotonicity = np.sum(self.mon_grad*np.array(grid.map))
-	# 	# value = len(grid.getAvailableCells())**2 + grid.getMaxTile()**0.5 + monotonicity**0.5
-	# 	# return value
-
-	# 	smoothWeight = 0.1
-	# 	monoWeight  = 1.0
-	# 	emptyWeight  = 2.7
-	# 	maxWeight    = 1.0
-	# 	empty = 1 if len(grid.getAvailableCells()) == 0 else len(grid.getAvailableCells())
-	# 	return self.smoothness(grid) * smoothWeight + \
-	# 		self.monotonicity(grid)*monoWeight + \
-	# 		np.log(empty)*emptyWeight +\
-	# 		grid.getMaxTile()*maxWeight
-
-	# def smoothness(self, grid):
-	# 	smoothness = 0
-	# 	for i in range(4):
-	# 		for j in range(4):
-	# 			if not grid.canInsert((i,j)):
-	# 				value = np.log(grid.map[i][j])/np.log(2)
-	# 				for vector in [RIGHT_VEC, DOWN_VEC]:
-	# 					targetCell = self.findfarthest(grid, (i,j), vector)['far']
-	# 					if not grid.canInsert(targetCell):
-	# 						target = grid.getCellValue(targetCell)
-	# 						targetValue = np.log(target)/np.log(2)
-	# 						smoothness -= abs(value - targetValue)
-	# 	return smoothness
-
-
-	# def monotonicity(self, grid):
-	# 	totals = [0, 0, 0, 0]
-	# 	# up/down
-	# 	for i in range(4):
-	# 		current = 0
-	# 		nxt = current + 1
-	# 		while nxt < 4:
-	# 			while nxt < 4 and grid.canInsert((i, nxt)):
-	# 				nxt+=1
-	# 			if nxt >= 4:
-	# 				nxt -= 1
-	# 			currentValue = np.log(grid.getCellValue((i, current)))/np.log(2) if not grid.canInsert((i, current)) else 0
-	# 			nextValue = np.log(grid.getCellValue((i, nxt)))/np.log(2) if not grid.canInsert((i, nxt)) else 0
-	# 			if currentValue > nextValue:
-	# 				totals[0] += nextValue - currentValue
-	# 			elif nextValue > currentValue:
-	# 				totals[1] += currentValue - nextValue
-	# 			current = nxt
-	# 			nxt += 1
-
-	# 	# left/right
-	# 	for j in range(4):
-	# 		current = 0
-	# 		nxt = current + 1
-	# 		while nxt < 4:
-	# 			while nxt < 4 and grid.canInsert((nxt, j)):
-	# 				nxt+=1
-	# 			if nxt >= 4:
-	# 				nxt -= 1
-	# 			currentValue = np.log(grid.getCellValue((current, j)))/np.log(2) if not grid.canInsert((current, j)) else 0
-	# 			nextValue = np.log(grid.getCellValue((nxt, j)))/np.log(2) if not grid.canInsert((nxt, j)) else 0
-	# 			if currentValue > nextValue:
-	# 				totals[2] += nextValue - currentValue
-	# 			elif nextValue > currentValue:
-	# 				totals[3] += currentValue - nextValue
-	# 			current = nxt
-	# 			nxt += 1
-	# 	return max(totals[0], totals[1]) + max(totals[2], totals[3])
-
-
-	# def findfarthest(self, grid, cell, vector):
-	# 	while True:
-	# 		prev = cell
-	# 		cell = (prev[0] + vector[0], prev[1] + vector[1])
-	# 		if grid.crossBound(cell) or not grid.canInsert(cell):
-	# 			return {'far': prev, 'nxt': cell}
-
-# -------------------------------------------
-
-
-	def evaluate(self, board,commonRatio=0.25):
-		linearWeightedVal = 0
-		invert = False
-		weight = 1.
-		malus = 0
-		criticalTile = (-1,-1)
-		for y in range(0,4):
-			for x in range(0,4):
-				b_x = x
-				b_y = y
-				if invert:
-					b_x = 4 - 1 - x
-				#linearW
-				currVal=board.getCellValue((b_x,b_y))
-				if(currVal == 0 and criticalTile == (-1,-1)):
-					criticalTile = (b_x,b_y)
-				linearWeightedVal += currVal*weight
-				weight *= commonRatio
-			invert = not invert
-			
-		linearWeightedVal2 = 0
-		invert = False
-		weight = 1.
-		malus = 0
-		criticalTile2 = (-1,-1)
-		for x in range(0,4):
-			for y in range(0,4):
-				b_x = x
-				b_y = y
-				if invert:
-					b_y = 4 - 1 - y
-				#linearW
-				currVal=board.getCellValue((b_x,b_y))
-				if(currVal == 0 and criticalTile2 == (-1,-1)):
-					criticalTile2 = (b_x,b_y)
-				linearWeightedVal2 += currVal*weight
-				weight *= commonRatio
-			invert = not invert
-			
-		
-		linearWeightedVal3 = 0
-		invert = False
-		weight = 1.
-		malus = 0
-		criticalTile3 = (-1,-1)
-		for y in range(0,4):
-			for x in range(0,4):
-				b_x = x
-				b_y = 4 - 1 - y
-				if invert:
-					b_x = 4 - 1 - x
-				#linearW
-				currVal=board.getCellValue((b_x,b_y))
-				if(currVal == 0 and criticalTile3 == (-1,-1)):
-					criticalTile3 = (b_x,b_y)
-				linearWeightedVal3 += currVal*weight
-				weight *= commonRatio
-			invert = not invert
-			
-		linearWeightedVal4 = 0
-		invert = False
-		weight = 1.
-		malus = 0
-		criticalTile4 = (-1,-1)
-		for x in range(0,4):
-			for y in range(0,4):
-				b_x = 4 - 1 - x
-				b_y = y
-				if invert:
-					b_y = 4 - 1 - y
-				#linearW
-				currVal=board.getCellValue((b_x,b_y))
-				if(currVal == 0 and criticalTile4 == (-1,-1)):
-					criticalTile4 = (b_x,b_y)
-				linearWeightedVal4 += currVal*weight
-				weight *= commonRatio
-			invert = not invert
-			
-			
-		linearWeightedVal5 = 0
-		invert = True
-		weight = 1.
-		malus = 0
-		criticalTile5 = (-1,-1)
-		for y in range(0,4):
-			for x in range(0,4):
-				b_x = x
-				b_y = y
-				if invert:
-					b_x = 4 - 1 - x
-				#linearW
-				currVal=board.getCellValue((b_x,b_y))
-				if(currVal == 0 and criticalTile5 == (-1,-1)):
-					criticalTile5 = (b_x,b_y)
-				linearWeightedVal5 += currVal*weight
-				weight *= commonRatio
-			invert = not invert
-			
-		linearWeightedVal6 = 0
-		invert = True
-		weight = 1.
-		malus = 0
-		criticalTile6 = (-1,-1)
-		for x in range(0,4):
-			for y in range(0,4):
-				b_x = x
-				b_y = y
-				if invert:
-					b_y = 4 - 1 - y
-				#linearW
-				currVal=board.getCellValue((b_x,b_y))
-				if(currVal == 0 and criticalTile6 == (-1,-1)):
-					criticalTile6 = (b_x,b_y)
-				linearWeightedVal6 += currVal*weight
-				weight *= commonRatio
-			invert = not invert
-			
-		
-		linearWeightedVal7 = 0
-		invert = True
-		weight = 1.
-		malus = 0
-		criticalTile7 = (-1,-1)
-		for y in range(0,4):
-			for x in range(0,4):
-				b_x = x
-				b_y = 4 - 1 - y
-				if invert:
-					b_x = 4 - 1 - x
-				#linearW
-				currVal=board.getCellValue((b_x,b_y))
-				if(currVal == 0 and criticalTile7 == (-1,-1)):
-					criticalTile7 = (b_x,b_y)
-				linearWeightedVal7 += currVal*weight
-				weight *= commonRatio
-			invert = not invert
-			
-		linearWeightedVal8 = 0
-		invert = True
-		weight = 1.
-		malus = 0
-		criticalTile8 = (-1,-1)
-		for x in range(0,4):
-			for y in range(0,4):
-				b_x = 4 - 1 - x
-				b_y = y
-				if invert:
-					b_y = 4 - 1 - y
-				#linearW
-				currVal=board.getCellValue((b_x,b_y))
-				if(currVal == 0 and criticalTile8 == (-1,-1)):
-					criticalTile8 = (b_x,b_y)
-				linearWeightedVal8 += currVal*weight
-				weight *= commonRatio
-			invert = not invert
-			
-		maxVal = max(linearWeightedVal,linearWeightedVal2,linearWeightedVal3,linearWeightedVal4,linearWeightedVal5,linearWeightedVal6,linearWeightedVal7,linearWeightedVal8)
-		if(linearWeightedVal2 > linearWeightedVal):
-			linearWeightedVal = linearWeightedVal2
-			criticalTile = criticalTile2
-		if(linearWeightedVal3 > linearWeightedVal):
-			linearWeightedVal = linearWeightedVal3
-			criticalTile = criticalTile3
-		if(linearWeightedVal4 > linearWeightedVal):
-			linearWeightedVal = linearWeightedVal4
-			criticalTile = criticalTile4
-		if(linearWeightedVal5 > linearWeightedVal):
-			linearWeightedVal = linearWeightedVal5
-			criticalTile = criticalTile5
-		if(linearWeightedVal6 > linearWeightedVal):
-			linearWeightedVal = linearWeightedVal6
-			criticalTile = criticalTile6
-		if(linearWeightedVal7 > linearWeightedVal):
-			linearWeightedVal = linearWeightedVal7
-			criticalTile = criticalTile7
-		if(linearWeightedVal8 > linearWeightedVal):
-			linearWeightedVal = linearWeightedVal8
-			criticalTile = criticalTile8
-		
-		return maxVal
