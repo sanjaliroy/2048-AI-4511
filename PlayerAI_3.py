@@ -18,7 +18,7 @@ class PlayerAI(BaseAI):
 		self.time = time.time()
 		(maxChild, maxUtility) = self.maximize(grid, -float('inf'), float('inf'))
 		move = maxChild[1]
-		# self.evaluate(maxChild[0],True)
+		self.evaluate(maxChild[0],True)
 		self.depth = 0
 		return move
 
@@ -88,21 +88,13 @@ class PlayerAI(BaseAI):
 	def cellOccupied(self, grid, pos):
 		return not not grid.getCellValue(pos)
 
-
-# --------------------------------
-	# def evaluate(self, grid):
-	# 	value = self.empty(grid) + self.monotonicity(grid)
-	# 	return value
-
 	def monoton(self, grid):
 	 	return np.log(np.sum(self.mon_grad*np.array(grid.map)))
 
-	# def empty(self, grid):
-	# 	return len(grid.getAvailableCells())**2
 
 	def evaluate(self, grid, prt = False):
 		smoothWeight = 0.8
-		monoWeight  = 6.0
+		monoWeight  = 5.0
 		emptyWeight  = 2.7
 		maxWeight    = 1.0
 		empty = 1 if len(grid.getAvailableCells()) == 0 else len(grid.getAvailableCells())
