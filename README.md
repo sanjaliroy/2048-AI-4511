@@ -10,9 +10,9 @@ Heuristics used:
 
 Results of 10 trials:
 
-Trials with max tile of 512: 60%
-Trials with max tile of 1024: 30%
-Trials with max tile of 2048: 10%
+512: 60%
+1024: 30%
+2048: 10%
 
 Execution:
 ```bash
