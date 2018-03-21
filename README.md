@@ -9,6 +9,7 @@ Heuristics used:
 * Maximum four tiles of board
 
 Results of 10 trials:
+
 Trials with max tile of 512: 60 %
 Trials with max tile of 1024: 30 %
 Trials with max tile of 2048: 10 %
