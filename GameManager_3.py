@@ -104,7 +104,7 @@ class GameManager:
             #     self.displayer.display(self.grid)
 
             # Exceeding the Time Allotted for Any Turn Terminates the Game
-            self.updateAlarm(time.clock())
+            # self.updateAlarm(time.clock())
 
             turn = 1 - turn
         return maxTile
@@ -141,6 +141,6 @@ def main():
     print("------------------------------")
     print("SCORE:", maxTile);
     print("Total elapsed CPU time:", end - start)
-    
+
 if __name__ == '__main__':
     main()
