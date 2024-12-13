@@ -12,7 +12,7 @@ class PlayerAI(BaseAI):
 
 	def getMove(self, grid):
 		self.depth = 0
-		self.time = time.clock()
+		self.time = time.process_time()
 		(maxChild, maxUtility) = self.maximize(grid, -float('inf'), float('inf'))
 		move = maxChild[1]
 		# self.evaluate(maxChild[0],True)
@@ -20,7 +20,7 @@ class PlayerAI(BaseAI):
 		return move
 
 	def timeup(self, depth):
-		diff = time.clock() - self.time
+		diff = time.process_time() - self.time
 		if diff >= 0.1/depth:
 			return True
 		else:
