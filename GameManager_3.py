@@ -21,6 +21,9 @@ actionDic = {
 timeLimit = 0.2
 allowance = 0.05
 
+# time benchmarks at score 
+benchmarks = [0,0,0,0]
+
 class GameManager:
     def __init__(self, size = 4):
         self.grid = Grid(size)
@@ -41,26 +44,26 @@ class GameManager:
     def setDisplayer(self, displayer):
         self.displayer = displayer
 
-    def updateAlarm(self, currTime):
-        if currTime - self.prevTime > timeLimit + allowance:
-            self.over = True
-        else:
-            while time.clock() - self.prevTime < timeLimit + allowance:
-                pass
+    # def updateAlarm(self, currTime):
+    #     if currTime - self.prevTime > timeLimit + allowance:
+    #         self.over = True
+    #     else:
+    #         while time.clock() - self.prevTime < timeLimit + allowance:
+    #             pass
 
-            self.prevTime = time.clock()
+    #         self.prevTime = time.clock()
 
     def start(self):
         for i in range(self.initTiles):
-            self.insertRandonTile()
+            self.insertRandomTile()
 
-        self.displayer.display(self.grid)
+        # self.displayer.display(self.grid)
 
         # Player AI Goes First
         turn = PLAYER_TURN
         maxTile = 0
 
-        self.prevTime = time.clock()
+        self.prevTime = time.process_time()
 
         while not self.isGameOver() and not self.over:
             # Copy to Ensure AI Cannot Change the Real Grid to Cheat
@@ -69,9 +72,9 @@ class GameManager:
             move = None
 
             if turn == PLAYER_TURN:
-                print("Player's Turn:", end="")
+                #print("Player's Turn:", end="")
                 move = self.playerAI.getMove(gridCopy)
-                print(actionDic[move])
+                #print(actionDic[move])
 
                 # Validate Move
                 if move != None and move >= 0 and move < 4:
@@ -87,7 +90,7 @@ class GameManager:
                     print("Invalid PlayerAI Move - 1")
                     self.over = True
             else:
-                print("Computer's turn:")
+                #print("Computer's turn:")
                 move = self.computerAI.getMove(gridCopy)
 
                 # Validate Move
@@ -97,14 +100,14 @@ class GameManager:
                     print("Invalid Computer AI Move")
                     self.over = True
 
-            if not self.over:
-                self.displayer.display(self.grid)
+            # if not self.over:
+            #     self.displayer.display(self.grid)
 
             # Exceeding the Time Allotted for Any Turn Terminates the Game
-            self.updateAlarm(time.clock())
+            # self.updateAlarm(time.clock())
 
             turn = 1 - turn
-        print(maxTile)
+        return maxTile
 
     def isGameOver(self):
         return not self.grid.canMove()
@@ -115,7 +118,7 @@ class GameManager:
         else:
             return self.possibleNewTiles[1];
 
-    def insertRandonTile(self):
+    def insertRandomTile(self):
         tileValue = self.getNewTileValue()
         cells = self.grid.getAvailableCells()
         cell = cells[randint(0, len(cells) - 1)]
@@ -131,7 +134,13 @@ def main():
     gameManager.setPlayerAI(playerAI)
     gameManager.setComputerAI(computerAI)
 
-    gameManager.start()
+    start = time.process_time()
+    maxTile = gameManager.start()
+    end = time.process_time();
+    print("COLLECTED DATA:")
+    print("------------------------------")
+    print("SCORE:", maxTile);
+    print("Total elapsed CPU time:", end - start)
 
 if __name__ == '__main__':
     main()
