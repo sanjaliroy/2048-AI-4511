@@ -1,6 +1,7 @@
 from Grid_3       import Grid
 from ComputerAI_3 import ComputerAI
 from PlayerAI_3   import PlayerAI
+from random_AI     import randAI
 from Displayer_3  import Displayer
 from random       import randint
 import time
