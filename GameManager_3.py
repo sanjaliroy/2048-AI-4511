@@ -1,7 +1,7 @@
 from Grid_3       import Grid
 from ComputerAI_3 import ComputerAI
-from PlayerAI_3   import PlayerAI
-from random_AI     import randAI
+from Minimax_AI   import minimaxAI
+from Random_AI     import randomAI
 from Displayer_3  import Displayer
 from random       import randint
 import time
@@ -127,7 +127,7 @@ class GameManager:
 
 def main():
     gameManager = GameManager()
-    playerAI  	= PlayerAI()
+    minimaxAI  	= minimaxAI()
     computerAI  = ComputerAI()
     displayer 	= Displayer()
 
