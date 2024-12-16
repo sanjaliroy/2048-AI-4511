@@ -1,9 +1,18 @@
 from Grid_3       import Grid
-from ComputerAI_3 import ComputerAI
+# from ComputerAI_3 import ComputerAI # 300
+from ComputerAI_3 import RandomAI # 150
+from ComputerAI_3 import MinimaxAI # 200
+from ComputerAI_3 import MontecarloAI # 250
 from PlayerAI_3   import PlayerAI
 from Displayer_3  import Displayer
 from random       import randint
 import time
+
+# NOTE: make sure you only have ONE uncommmented out of the following
+# Random Search -> search "150" and uncomment those lines
+# Minimax Search -> search "200" and uncomment those lines
+# Monte Carlo Search -> search "250" and uncomment those lines
+# original code -> to be deleted, "300"
 
 defaultInitialTiles = 2
 defaultProbability = 0.9
@@ -30,13 +39,26 @@ class GameManager:
         self.possibleNewTiles = [2, 4]
         self.probability = defaultProbability
         self.initTiles  = defaultInitialTiles
-        self.computerAI = None
+        # self.computerAI = None # 300
+        # self.randomAI = None #150
+        # self.minimaxAI = None #200
+        self.montecarloAI = None #250
         self.playerAI   = None
         self.displayer  = None
         self.over       = False
 
-    def setComputerAI(self, computerAI):
-        self.computerAI = computerAI
+    # def setComputerAI(self, computerAI): # 300
+    #     self.computerAI = computerAI
+
+    # new additions
+    # def setRandomAI(self, randomAI): # 150
+    #     self.randomAI = randomAI
+
+    # def setMinimaxAI(self, minimaxAI): # 200
+    #     self.minimaxAI = minimaxAI
+
+    def setMontecarloAI(self, montecarloAI): # 250
+        self.montecarloAI = montecarloAI
 
     def setPlayerAI(self, playerAI):
         self.playerAI = playerAI
@@ -91,7 +113,10 @@ class GameManager:
                     self.over = True
             else:
                 #print("Computer's turn:")
-                move = self.computerAI.getMove(gridCopy)
+                # move = self.computerAI.getMove(gridCopy) # 300
+                # move = self.randomAI.getMove(gridCopy) # 150
+                # move = self.minimaxAI.getMove(gridCopy) # 200 
+                move = self.montecarloAI.getMove(gridCopy) # 250
 
                 # Validate Move
                 if move and self.grid.canInsert(move):
@@ -127,19 +152,25 @@ class GameManager:
 def main():
     gameManager = GameManager()
     playerAI  	= PlayerAI()
-    computerAI  = ComputerAI()
+    # computerAI  = ComputerAI() # 300
+    # randomAI = RandomAI() # 150
+    # minimaxAI = MinimaxAI() # 200
+    montecarloAI = MontecarloAI() # 250
     displayer 	= Displayer()
 
     gameManager.setDisplayer(displayer)
     gameManager.setPlayerAI(playerAI)
-    gameManager.setComputerAI(computerAI)
+    # gameManager.setComputerAI(computerAI) # 300
+    # gameManager.setRandomAI(randomAI) # 150
+    # gameManager.setMinimaxAI(minimaxAI) # 200
+    gameManager.setMontecarloAI(montecarloAI) # 250
 
     start = time.process_time()
     maxTile = gameManager.start()
-    end = time.process_time();
+    end = time.process_time()
     print("COLLECTED DATA:")
     print("------------------------------")
-    print("SCORE:", maxTile);
+    print("SCORE:", maxTile)
     print("Total elapsed CPU time:", end - start)
 
 if __name__ == '__main__':
