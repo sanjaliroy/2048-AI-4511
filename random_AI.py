@@ -6,9 +6,9 @@ import time
 
 directionVectors = (UP_VEC, DOWN_VEC, LEFT_VEC, RIGHT_VEC) = ((-1, 0), (1, 0), (0, -1), (0, 1))
 
-class randAI(BaseAI):
+class randomAI(BaseAI):
+    # returns a random move from all possible moves from current grid state
     def getMove(self, grid):
-        # choose a random move (from possible moves)
         available = grid.getAvailableMoves()
         if len(available) == 0:
             return None
