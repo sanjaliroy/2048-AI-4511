@@ -3,6 +3,7 @@ from BaseAI_3 import BaseAI
 from Displayer_3 import Displayer
 import numpy as np
 import time
+import random
 
 directionVectors = (UP_VEC, DOWN_VEC, LEFT_VEC, RIGHT_VEC) = ((-1, 0), (1, 0), (0, -1), (0, 1))
 
@@ -12,4 +13,4 @@ class randomAI(BaseAI):
         available = grid.getAvailableMoves()
         if len(available) == 0:
             return None
-        return available[randint(0,len(available)-1)]
+        return random.choice(available)

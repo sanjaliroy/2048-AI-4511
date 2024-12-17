@@ -1,6 +1,7 @@
 from Grid_3       import Grid
 from ComputerAI_3 import ComputerAI
 from Minimax_AI   import minimaxAI
+from MonteCarlo_AI import montecarloAI
 from Random_AI     import randomAI
 from Displayer_3  import Displayer
 from random       import randint
@@ -65,7 +66,7 @@ class GameManager:
         maxTile = 0
 
         self.prevTime = time.process_time()
-
+        print("Playing...")
         while not self.isGameOver() and not self.over:
             # Copy to Ensure AI Cannot Change the Real Grid to Cheat
             gridCopy = self.grid.clone()
@@ -75,7 +76,7 @@ class GameManager:
             if turn == PLAYER_TURN:
                 #print("Player's Turn:", end="")
                 move = self.playerAI.getMove(gridCopy)
-                #print(actionDic[move])
+                print(actionDic[move])
 
                 # Validate Move
                 if move != None and move >= 0 and move < 4:
@@ -126,14 +127,16 @@ class GameManager:
         self.grid.setCellValue(cell, tileValue)
 
 def main():
-    gameManager = GameManager()
-    minimaxAI  	= minimaxAI()
-    computerAI  = ComputerAI()
-    displayer 	= Displayer()
+    gameManager  = GameManager()
+    minimax_AI  	 = minimaxAI()
+    random_AI     = randomAI()
+    montecarlo_AI = montecarloAI()
+    computer_AI   = ComputerAI()
+    displayer 	 = Displayer()
 
     gameManager.setDisplayer(displayer)
-    gameManager.setPlayerAI(playerAI)
-    gameManager.setComputerAI(computerAI)
+    gameManager.setPlayerAI(montecarlo_AI)
+    gameManager.setComputerAI(computer_AI)
 
     start = time.process_time()
     maxTile = gameManager.start()
