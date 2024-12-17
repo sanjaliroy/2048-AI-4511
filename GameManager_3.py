@@ -1,10 +1,12 @@
 from Grid_3       import Grid
 from ComputerAI_3 import ComputerAI
-from Minimax_AI   import minimaxAI
-from Random_AI     import randomAI
+#from Minimax_AI   import minimaxAI
+import Minimax_AI
+from random_AI     import randomAI
 from Displayer_3  import Displayer
 from random       import randint
 import time
+import MonteCarlo_AI_Copy
 
 defaultInitialTiles = 2
 defaultProbability = 0.9
@@ -127,20 +129,21 @@ class GameManager:
 
 def main():
     gameManager = GameManager()
-    minimaxAI  	= minimaxAI()
+    # minimaxAI  	= Minimax_AI.minimaxAI()
+    monte_carlo = MonteCarlo_AI_Copy.montecarloAI()
     computerAI  = ComputerAI()
     displayer 	= Displayer()
 
     gameManager.setDisplayer(displayer)
-    gameManager.setPlayerAI(playerAI)
+    gameManager.setPlayerAI(monte_carlo)
     gameManager.setComputerAI(computerAI)
 
     start = time.process_time()
     maxTile = gameManager.start()
-    end = time.process_time();
+    end = time.process_time()
     print("COLLECTED DATA:")
     print("------------------------------")
-    print("SCORE:", maxTile);
+    print("SCORE:", maxTile)
     print("Total elapsed CPU time:", end - start)
 
 if __name__ == '__main__':
