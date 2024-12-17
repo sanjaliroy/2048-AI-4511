@@ -1,0 +1,65 @@
+from random import randint
+from BaseAI_3 import BaseAI
+from Displayer_3 import Displayer
+import numpy as np
+import time
+import math
+
+directionVectors = (UP_VEC, DOWN_VEC, LEFT_VEC, RIGHT_VEC) = ((-1, 0), (1, 0), (0, -1), (0, 1))
+
+# class for the nodes of the game tree
+class Node():
+    def __init__(self, state, parent = None):
+        self.state = state
+        self.parent = parent
+        self.children = []
+        self.total_value = 0
+        self.total_playouts = 0
+        self.possible_moves = self.state.getAvailableMoves() 
+
+    def add_child(self, child_node):
+        self.children.append(child_node)
+    
+class montecarloAI(BaseAI):
+    time_limit = 0 
+    def getMove(self, grid):
+        # based off implementation found in the AI textbook
+        cGrid = grid.clone()
+        root = Node(cGrid)
+        curr = root
+        while (root.total_playouts < 10):
+            if (curr.children = []):
+                if (curr.total_playouts = 0):
+                    val = self.simulate(curr)
+                    self.backProp(val, curr)
+                else:
+                    for move in curr.possible_moves:
+                        curr.add_child(Node(move))
+                        curr = curr.children[0]
+            else:
+                max_val = 0
+                max_val_index = 0
+                for child in curr.children:
+                    UCB_val = self.UCB1(child)
+                    if UCB_val > max_val:
+                        max_val = UCB_val
+                        max_val_index = curr.children.index(child)
+                curr = curr.children[max_val_index]
+        return # the move in ACTIONS(state) whose node has highest number of playouts
+    
+    def simulate(self, node):
+        return
+    
+    def backProp(self, val, node):
+        curr = node
+        curr.total_value = val + curr.total_value
+        while curr. 
+        return
+    
+    # PARAM: Node object node
+    # using UCT formula (upper confidence bound applied to trees)
+    def UCB1(self, node):
+        C = math.sqrt(2) # textbooks says this is works well throetically
+        return ((node.total_wins / node.total_playouts) +
+                    (C * math.sqrt(math.log(node.parent.total_playouts) / node.total_playouts)))
+                
