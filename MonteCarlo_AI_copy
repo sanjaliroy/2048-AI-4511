@@ -21,29 +21,41 @@ class Node():
         self.children.append(child_node)
     
 class montecarloAI(BaseAI):
-    time_limit = 0 
     def getMove(self, grid):
         # based off implementation found in the AI textbook
         cGrid = grid.clone()
         root = Node(cGrid)
         curr = root
         while (root.total_playouts < 10):
+            # if curr = leaf
             if (curr.children = []):
+                # if the node has 0 playouts
                 if (curr.total_playouts = 0):
                     val = self.simulate(curr)
                     self.backProp(val, curr)
                 else:
+                    # if node does not have 0 playouts
+                    # all the possible moves become children
                     for move in curr.possible_moves:
-                        curr.add_child(Node(move))
-                        curr = curr.children[0]
+                        child = curr.add_child(Node(move))
+                        # setting the parent of each child to the current node
+                        child.parent = curr
+                    # choose the first node
+                    curr = curr.children[0]
+            # if curr is NOT a leaf
             else:
                 max_val = 0
                 max_val_index = 0
+                # for each child
                 for child in curr.children:
+                    # retrieve UCB val
                     UCB_val = self.UCB1(child)
+                    # if UCB is greater than current max val
                     if UCB_val > max_val:
                         max_val = UCB_val
+                        # take note of index of child in list of children
                         max_val_index = curr.children.index(child)
+                # current node is the child with maximum value
                 curr = curr.children[max_val_index]
         return # the move in ACTIONS(state) whose node has highest number of playouts
     
