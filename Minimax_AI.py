@@ -87,7 +87,6 @@ class minimaxAI(BaseAI):
 	def monoton(self, grid):
 	 	return np.log(np.sum(self.mon_grad*np.array(grid.map)))
 
-
 	def evaluate(self, grid, prt = False):
 		emptycells = len(grid.getAvailableCells())
 		empty = emptycells if emptycells else 1
