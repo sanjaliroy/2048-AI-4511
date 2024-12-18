@@ -10,6 +10,7 @@ import random
 directionVectors = (UP_VEC, DOWN_VEC, LEFT_VEC, RIGHT_VEC) = ((-1, 0), (1, 0), (0, -1), (0, 1))
 (PLAYER_TURN, COMPUTER_TURN) = (0, 1)
 computerAI  = ComputerAI()
+possibleNewTiles = [2, 4]
 
 # class for the nodes of the game tree
 class Node():
@@ -22,42 +23,49 @@ class Node():
        self.total_playouts = 0
        self.possible_moves = self.state.getAvailableMoves()
 
-   def add_child(self, child_node):
-       self.children.append(child_node)
+   def add_child(self, parent, child_node):
+       print("in add child")
+       parent.children.append(child_node)
   
 class montecarloAI(BaseAI):
     def getMove(self, grid):
        # based off implementation found in the AI textbook
         cGrid = grid.clone()
+        print("cGrid: ", cGrid.map)
         root = Node(cGrid)
-        curr = root
-        while (root.total_playouts < 10):
+        while (root.total_playouts < 100):
+            curr = root
+            print("Root playouts: ", root.total_playouts)
            # if curr = leaf
+            print(f"Current node children: {curr.children}")
             if (curr.children == []):
                # if the node has 0 playouts
                 if (curr.total_playouts == 0):
                    val = self.rollout(curr)
+                   print(f"Backpropagating value: {val}")
                    self.backProp(val, curr)
-                   curr = root
                 else:
                    # if node does not have 0 playouts
                    # all the possible moves become children
+                    print(f"Expanding node: {curr.state.map}")
                     for move in curr.possible_moves:
-                        if move != None and move >= 0 and move < 4:
-                            grid_copy = curr.state
+                        print("Move: ", move)
+                        if move is not None and move >= 0 and move < 4:
+                            grid_copy = curr.state.clone()
+                            print("grid copy: ", grid_copy.map)
                             if grid_copy.canMove([move]):
+                            #if grid_copy.canMove([move]):
                                 grid_copy.move(move)
-                            else:
-                                print("Invalid PlayerAI Move")
+                                curr.add_child(curr, Node(grid_copy, curr, move))
                         else:
                             print("Invalid PlayerAI Move - 1")
-                        child = curr.add_child(Node(grid_copy, curr, move))
                        # setting the parent of each child to the current node
                    # choose the first node because all have number of playouts = 0
+                    print("Children: ", curr.children)
                     curr = curr.children[0]
            # if curr is NOT a leaf
             else:
-                max_val = 0
+                max_val = -(float('inf'))
                 max_val_index = 0
                # for each child
                 for child in curr.children:
@@ -70,65 +78,59 @@ class montecarloAI(BaseAI):
                        max_val_index = curr.children.index(child)
                # current node is the child with maximum value
                 curr = curr.children[max_val_index]
-        max_total_val = 0
+        print("out of while loop")
+        max_total_playouts = 0
         max_index = 0
         for child in root.children:
-           if child.total_value > max_total_val:
-               max_total_val = child.total_value
-               root.children.indexof(child) = max_index
+           if child.total_playouts > max_total_playouts:
+               max_total_playouts = child.total_playouts
+               max_index = root.children.index(child)
+        print("best move: ", root.children[max_index].prev_move)
         return root.children[max_index].prev_move # the move in ACTIONS(state) whose node has highest number of playouts
   
-    def rollout(self, node):
-       while True:
-           if node.state.getMaxTile() == 2048:
-                return 2048
-           # if tiles are full
-           if not node.state.canMove():
-                return node.state.getMaxTile()
-           else:
-                node.state = self.simulate(node)
+    def getNewTileValue(self):
+        if randint(0,99) < 100 * 0.9:
+            return possibleNewTiles[0]
+        else:
+            return possibleNewTiles[1]
 
-    def simulate(self, action, node):
+    def rollout(self, node):
+       grid_copy = node.state.clone()
+       simulation_node = Node(grid_copy)
+       terminal_state = self.simulate(simulation_node)
+       return terminal_state.getMaxTile()
+
+    def simulate(self, node):
         turn = PLAYER_TURN
-        state_copy = node.state
+        state_copy = node.state.clone()
+        
         while state_copy.canMove():
             if turn == PLAYER_TURN:
-               move = random.choice(node.possible_actions)
+               move = random.choice(state_copy.getAvailableMoves())
                # Validate Move
-               if move != None and move >= 0 and move < 4:
+               if move is not None and move >= 0 and move < 4:
                     if state_copy.canMove([move]):
                         state_copy.move(move)
-                    else:
-                        print("Invalid PlayerAI Move")
-               else:
-                    print("Invalid PlayerAI Move - 1")
             else:
                 move = computerAI.getMove(state_copy)
                 # Validate Move
                 if move and state_copy.canInsert(move):
-                    state_copy.setCellValue(move, state_copy.getNewTileValue())
-                else:
-                    print("Invalid Computer AI Move")
+                    state_copy.setCellValue(move, self.getNewTileValue())
             turn = 1 - turn
         return state_copy
   
     def backProp(self, val, node):
-       curr = node
-       curr.total_value = val + curr.total_value
-       curr.total_playouts = curr.total_playouts + 1
-       while True:
-           curr = curr.parent
-           curr.backProp(val, curr)
-           if curr.parent == None:
-               break
+        curr = node
+        while curr is not None:
+            curr.total_value += val
+            curr.total_playouts = curr.total_playouts + 1
+            curr = curr.parent
   
    # PARAM: Node object node
    # using UCT formula (upper confidence bound applied to trees)
     def UCB1(self, node):
        if node.total_playouts == 0:
            return float('inf')
-       C = math.sqrt(2) # textbooks says this is works well theoretically
-       return ((node.total_wins / node.total_playouts) +
+       C = 2 # textbooks says this is works well theoretically
+       return ((node.total_value / node.total_playouts) +
                    (C * math.sqrt(math.log(node.parent.total_playouts) / node.total_playouts)))
-              
-
