@@ -1,5 +1,5 @@
 # 2048-AI
-AI that plays 2048 puzzle using minimax and alpha-beta pruning.
+AI that plays 2048 puzzle using random, minimax with alpha-beta pruning, or Monte Carlo Tree Search.
 
 By default if you run it, you will be running the Monte Carlo agent. Execution command is written below.
 
