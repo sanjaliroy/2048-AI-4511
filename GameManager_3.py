@@ -6,7 +6,8 @@ from random_AI     import randomAI
 from Displayer_3  import Displayer
 from random       import randint
 import time
-import MonteCarlo_AI_Copy_2
+import MonteCarlo_AI
+import random_AI
 
 defaultInitialTiles = 2
 defaultProbability = 0.9
@@ -130,7 +131,8 @@ class GameManager:
 def main():
     gameManager = GameManager()
     # minimaxAI  	= Minimax_AI.minimaxAI()
-    monte_carlo = MonteCarlo_AI_Copy_2.montecarloAI()
+    # randomAI_agent = random_AI.randomAI()
+    monte_carlo = MonteCarlo_AI.montecarloAI()
     computerAI  = ComputerAI()
     displayer 	= Displayer()
 
